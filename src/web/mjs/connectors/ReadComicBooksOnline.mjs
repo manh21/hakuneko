@@ -1,13 +1,7 @@
 import Connector from '../engine/Connector.mjs';
 
-/**
- *
- */
 export default class ReadComicBooksOnline extends Connector {
 
-    /**
-     *
-     */
     constructor() {
         super();
         super.id = 'readcomicbooksonline';
@@ -16,9 +10,6 @@ export default class ReadComicBooksOnline extends Connector {
         this.url = 'https://comicpunch.net';
     }
 
-    /**
-     *
-     */
     _getMangaList( callback ) {
         let request = new Request( this.url + '/comics-list', this.requestOptions );
         this.fetchDOM( request, 'div#block-system-main div.view-content table tbody tr td a' )
@@ -37,9 +28,6 @@ export default class ReadComicBooksOnline extends Connector {
             } );
     }
 
-    /**
-     *
-     */
     _getChapterList( manga, callback ) {
         this.fetchDOM( this.url + manga.id, 'div#chapterlist li.chapter a' )
             .then( data => {
@@ -58,9 +46,6 @@ export default class ReadComicBooksOnline extends Connector {
             } );
     }
 
-    /**
-     *
-     */
     _getPageList( manga, chapter, callback ) {
         let request = new Request( this.url + chapter.id, this.requestOptions );
         this.fetchDOM( request, 'source.picture' )
@@ -77,9 +62,6 @@ export default class ReadComicBooksOnline extends Connector {
             } );
     }
 
-    /**
-     *
-     */
     _handleConnectorURI( payload ) {
         /*
          * TODO: only perform requests when from download manager
