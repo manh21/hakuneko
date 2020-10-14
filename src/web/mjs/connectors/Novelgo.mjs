@@ -19,8 +19,13 @@ export default class Novelgo extends Connector {
     }
 
     async _getMangasFromPage(page) {
+<<<<<<< HEAD
         const URI = new URL(this.path + page + '/', this.url);
         let request = new Request(URI, this.requestOptions);
+=======
+        const uri = new URL(this.path + page + '/', this.url);
+        let request = new Request(uri, this.requestOptions);
+>>>>>>> upstream/master
         let data = await this.fetchDOM(request, this.queryMangas);
         return data.map(element => {
             return {
@@ -40,8 +45,16 @@ export default class Novelgo extends Connector {
     }
 
     async _getChaptersFromJSON(page, id){
+<<<<<<< HEAD
         const URI = new URL('/wp-json/noveils/v1/chapters?paged=' + page + '&perpage=250&category=' + id, this.url);
         let request = new Request(URI, this.requestOptions);
+=======
+        const uri = new URL('/wp-json/noveils/v1/chapters', this.url);
+        uri.searchParams.set('paged', page);
+        uri.searchParams.set('perpage', 250);
+        uri.searchParams.set('category', id);
+        let request = new Request(uri, this.requestOptions);
+>>>>>>> upstream/master
         let data = await this.fetchJSON(request);
         return data.map(element => {
             return {
@@ -52,10 +65,17 @@ export default class Novelgo extends Connector {
     }
 
     async _getChapters(manga) {
+<<<<<<< HEAD
         const MANGA_ID = manga.id.substring(7).slice(0, -1);
         let chapterList = [];
         for (let page = 1, run = true; run; page++){
             let chapters = await this._getChaptersFromJSON(page, MANGA_ID);
+=======
+        const mangaId = manga.id.slice(7, -1);
+        let chapterList = [];
+        for (let page = 1, run = true; run; page++){
+            let chapters = await this._getChaptersFromJSON(page, mangaId);
+>>>>>>> upstream/master
             chapters.length > 0 ? chapterList.push(...chapters) : run = false;
         }
         return chapterList;
@@ -69,7 +89,11 @@ export default class Novelgo extends Connector {
                 container.style.maxWidth = '${this.novelWidth}';
                 container.style.padding = '0';
                 container.style.margin = '0';
+<<<<<<< HEAD
                 let novel = document.querySelector('div#chapter-post-content');
+=======
+                let novel = document.querySelector('${this.novelContentQuery}');
+>>>>>>> upstream/master
                 novel.style.padding = '${this.novelPadding}';
                 document.querySelectorAll('${this.novelObstaclesQuery}').forEach(element => element.style.display = 'none');
                 let script = document.createElement('script');
@@ -85,9 +109,15 @@ export default class Novelgo extends Connector {
     }
 
     async _getPages(chapter) {
+<<<<<<< HEAD
         const URI = new URL(chapter.id, this.url);
         let request = new Request(URI, this.requestOptions);
         let data = await this.fetchDOM(request, this.novelContentQuery);
         return data.length > 0 ? this._getPagesNovel(request) : super._getPages(chapter);
+=======
+        const uri = new URL(chapter.id, this.url);
+        let request = new Request(uri, this.requestOptions);
+        return this._getPagesNovel(request);
+>>>>>>> upstream/master
     }
 }
