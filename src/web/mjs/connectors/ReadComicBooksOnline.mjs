@@ -1,7 +1,13 @@
 import Connector from '../engine/Connector.mjs';
 
+/**
+ *
+ */
 export default class ReadComicBooksOnline extends Connector {
 
+    /**
+     *
+     */
     constructor() {
         super();
         super.id = 'readcomicbooksonline';
@@ -10,6 +16,9 @@ export default class ReadComicBooksOnline extends Connector {
         this.url = 'https://comicpunch.net';
     }
 
+    /**
+     *
+     */
     _getMangaList( callback ) {
         let request = new Request( this.url + '/comics-list', this.requestOptions );
         this.fetchDOM( request, 'div#block-system-main div.view-content table tbody tr td a' )
@@ -28,12 +37,15 @@ export default class ReadComicBooksOnline extends Connector {
             } );
     }
 
+    /**
+     *
+     */
     _getChapterList( manga, callback ) {
-        this.fetchDOM( this.url + manga.id, 'div#chapterlist li.chapter a' )
+        this.fetchDOM( this.url + manga.id, 'div.field-item li.chapter a' )
             .then( data => {
                 let chapterList = data.map( element => {
                     return {
-                        id: this.getRelativeLink( element ) + '/?q=fullchapter',
+                        id: this.getRelativeLink( element ),
                         title: element.text.replace( manga.title, '' ).trim(),
                         language: 'en'
                     };
@@ -46,22 +58,19 @@ export default class ReadComicBooksOnline extends Connector {
             } );
     }
 
-    _getPageList( manga, chapter, callback ) {
-        let request = new Request( this.url + chapter.id, this.requestOptions );
-        this.fetchDOM( request, 'source.picture' )
-            .then( data => {
-                let pageList = data.map( element => this.createConnectorURI( {
-                    url: this.getAbsolutePath( '/reader/' + element.getAttribute( 'src' ), request.url ),
-                    referer: request.url
-                } ) );
-                callback( null, pageList );
-            } )
-            .catch( error => {
-                console.error( error, chapter );
-                callback( error, undefined );
-            } );
+    /**
+     *
+     */
+    async _getPages(chapter) {
+        let request = new Request(new URL(chapter.id, this.url), this.requestOptions);
+        let data = await this.fetchRegex(request, /messages\s*=\s*(\[[^\]]+\])\s*;/g);
+        data = Object.values(JSON.parse(data[0]));
+        return data.map(element => this.getAbsolutePath(element, request.url));
     }
 
+    /**
+     *
+     */
     _handleConnectorURI( payload ) {
         /*
          * TODO: only perform requests when from download manager
