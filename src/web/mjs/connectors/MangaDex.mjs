@@ -11,6 +11,10 @@ export default class MangaDex extends Connector {
         this.url = 'https://mangadex.org';
         this.requestOptions.headers.set('x-cookie', 'mangadex_h_toggle=1; mangadex_title_mode=2');
         this.requestOptions.headers.set('x-referer', this.url);
+        this.licensedChapterGroups = [
+            9097 // MangaPlus
+        ];
+
         // Private members for internal use that can be configured by the user through settings menu (set to undefined or false to hide from settings menu!)
         this.config = {
             node: {
@@ -76,39 +80,45 @@ export default class MangaDex extends Connector {
 
     async _getChapters(manga) {
         const uri = new URL(`/api/v2/manga/${this._migratedMangaID(manga.id)}/chapters`, this.url);
-        let data = await this._requestAPI(uri, 'chapter');
-        return data.data.chapters.map(chapter => {
-            let title = '';
-            if(chapter.volume) { // => string, not a number
-                title += 'Vol.' + this._padNum(chapter.volume, 2);
-            }
-            if(chapter.chapter) { // => string, not a number
-                title += ' Ch.' + this._padNum(chapter.chapter, 4);
-            }
-            if(chapter.title) {
-                title += (title ? ' - ' : '') + chapter.title;
-            }
-            if(chapter.language) {
-                title += ' (' + chapter.language + ')';
-            }
-            if(chapter.groups.length) {
-                const getGroup = groupID => {
-                    const group = data.data.groups.find(g => g.id === groupID);
-                    return group ? group.name : 'unknown';
+        const request = new Request(uri);
+        const data = await this.fetchJSON(request);
+        return data.data.chapters
+            .filter(chapter => !this.licensedChapterGroups.some(id => chapter.groups.includes(id)))
+            .map(chapter => {
+                let title = '';
+                if(chapter.volume) { // => string, not a number
+                    title += 'Vol.' + this._padNum(chapter.volume, 2);
+                }
+                if(chapter.chapter) { // => string, not a number
+                    title += ' Ch.' + this._padNum(chapter.chapter, 4);
+                }
+                if(chapter.title) {
+                    title += (title ? ' - ' : '') + chapter.title;
+                }
+                if(chapter.language) {
+                    title += ' (' + chapter.language + ')';
+                }
+                if(chapter.groups.length) {
+                    const getGroup = groupID => {
+                        const group = data.data.groups.find(g => g.id === groupID);
+                        return group ? group.name : 'unknown';
+                    };
+                    title += ' [' + chapter.groups.map(getGroup).join(', ') + ']';
+                }
+                return {
+                    id: chapter.id,
+                    title: title.trim(),
+                    language: chapter.language
                 };
-                title += ' [' + chapter.groups.map(getGroup).join(', ') + ']';
-            }
-            return {
-                id: chapter.id,
-                title: title.trim(),
-                language: chapter.language
-            };
-        });
+            });
     }
 
     async _getPages(chapter) {
-        const uri = new URL(`/api/v2/chapter/${chapter.id}?saver=false`, this.url);
-        const data = await this._requestAPI(uri, 'page');
+        const uri = new URL(`/api/v2/chapter/${chapter.id}`, this.url);
+        uri.searchParams.set('mark_read', false);
+        uri.searchParams.set('saver', false);
+        const request = new Request(uri);
+        const data = await this.fetchJSON(request);
         const baseURL = this._getNode(data.data.server) + data.data.hash + '/';
         return data.data.pages.map(page => this.createConnectorURI(baseURL + page));
     }
@@ -124,16 +134,6 @@ export default class MangaDex extends Connector {
             this.config.node.value = 'https://s2.mangadex.cf';
         }
         return new URL('/data/', this.config.node.value).href;
-    }
-
-    async _requestAPI(url, label) {
-        let request = new Request(url, this.requestOptions);
-        let data = await this.fetchJSON(request);
-        if(data.status.toLowerCase() !== 'ok') {
-            let message = data.status === 'external' ? 'External reference: ' + data.external : data[ 'message' ] || 'No information available';
-            throw new Error(`Failed to receive ${label} list (status: ${data.status})\n${message}`);
-        }
-        return data;
     }
 
     _padNum(number, places) {
